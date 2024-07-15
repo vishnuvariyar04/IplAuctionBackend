@@ -14,10 +14,64 @@ datasource db {
 }
 
 
-model users {
+model Owner {
   id        String   @id @default(cuid())
+  name      String
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  team     Team[]
+  bids      Bid[]
+}
+
+model Player {
+  id          String   @id @default(cuid())
+  name        String
+  age         Int
+  nationality String
+  type        String // e.g., Batsman, Bowler, All-rounder
+  runs        Int
+  wickets      Int
+  price       Float
+  teamId      String?
+  team        Team?    @relation(fields: [teamId], references: [id])
+  bids      Bid[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Auction {
+  id        String   @id @default(cuid())
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  team     Team[]   @relation("TeamAuctions")
+  bids      Bid[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     Owner    @relation(fields: [ownerId], references: [id])
+  players   Player[]
+  auctions  Auction[] @relation("TeamAuctions")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Bid {
+  id        String   @id @default(cuid())
+  amount    Float
+  playerId  String
+  ownerId   String
+  player    Player   @relation(fields: [playerId], references: [id])
+  auctionId String
+  auction   Auction  @relation(fields: [auctionId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner     Owner    @relation(fields: [ownerId], references: [id])
 }
