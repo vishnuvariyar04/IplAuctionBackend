@@ -1,12 +1,21 @@
 import express from 'express';
-import { createPlayer, getAllPlayers, getPlayerById, updatePlayer, deletePlayer } from '../controllers/playerController.js';
+import {
+  createPlayer,
+  getPlayers,
+  getPlayer,
+  updatePlayer,
+  deletePlayer,
+  joinAuction,
+} from '../controllers/playerController.js';
+import { authenticateUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/', createPlayer);
-router.get('/', getAllPlayers);
-router.get('/:id', getPlayerById);
-router.put('/:id', updatePlayer);
-router.delete('/:id', deletePlayer);
+router.post('/', authenticateUser, createPlayer);
+router.get('/', getPlayers);
+router.get('/:id', getPlayer);
+router.put('/:id', authenticateUser, updatePlayer);
+router.delete('/:id', authenticateUser, deletePlayer);
+router.post('/:id/join-auction', authenticateUser, joinAuction);
 
 export default router;

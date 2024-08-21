@@ -14,64 +14,52 @@ datasource db {
 }
 
 
-model Owner {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
+model User {
+  id        String    @id @default(cuid())
+  username     String    @unique
   password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  team     Team[]
-  bids      Bid[]
-}
-
-model Player {
-  id          String   @id @default(cuid())
-  name        String
-  age         Int
-  nationality String
-  type        String // e.g., Batsman, Bowler, All-rounder
-  runs        Int
-  wickets      Int
-  price       Float
-  teamId      String?
-  team        Team?    @relation(fields: [teamId], references: [id])
-  bids      Bid[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Auction {
-  id        String   @id @default(cuid())
-  name      String
-  startDate DateTime
-  endDate   DateTime
-  team     Team[]   @relation("TeamAuctions")
-  bids      Bid[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  teams     Team[]
+  auctions  Auction[] 
 }
 
 model Team {
-  id        String   @id @default(cuid())
-  name      String
-  ownerId   String
-  owner     Owner    @relation(fields: [ownerId], references: [id])
-  players   Player[]
-  auctions  Auction[] @relation("TeamAuctions")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String    @id @default(cuid())
+  name       String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  ownerId    String
+  owner      User      @relation(fields: [ownerId], references: [id])
+  players    Player[]
+  auctions   Auction[] @relation("TeamAuctions")
 }
 
-model Bid {
-  id        String   @id @default(cuid())
-  amount    Float
-  playerId  String
-  ownerId   String
-  player    Player   @relation(fields: [playerId], references: [id])
-  auctionId String
-  auction   Auction  @relation(fields: [auctionId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  owner     Owner    @relation(fields: [ownerId], references: [id])
+model Player {
+  id          String    @id @default(cuid())
+  name        String
+  age         Int
+  nationality String
+  type        String
+  runs        Int
+  wickets     Int
+  price       Int
+  teamId      String?
+  team        Team?     @relation(fields: [teamId], references: [id])
+  auctionId   String?
+  auction     Auction?  @relation(fields: [auctionId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  sold        Boolean   @default(false)
+}
+
+model Auction {
+  id          String    @id @default(cuid())
+  name        String
+  auctioneerId String
+  auctioneer  User      @relation(fields: [auctioneerId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  teams       Team[]    @relation("TeamAuctions")
+  players     Player[]
 }
