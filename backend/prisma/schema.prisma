@@ -16,12 +16,13 @@ datasource db {
 
 model User {
   id        String    @id @default(cuid())
-  username     String    @unique
+  username  String    @unique
   password  String
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   teams     Team[]
-  auctions  Auction[] 
+  auctions  Auction[]
+  player    Player?
 }
 
 model Team {
@@ -48,6 +49,8 @@ model Player {
   team        Team?     @relation(fields: [teamId], references: [id])
   auctionId   String?
   auction     Auction?  @relation(fields: [auctionId], references: [id])
+  userId      String     @unique
+  user        User      @relation(fields: [userId], references: [id])
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   sold        Boolean   @default(false)

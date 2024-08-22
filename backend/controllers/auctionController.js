@@ -1,3 +1,4 @@
+import {WebSocketServer} from 'ws';
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
@@ -79,3 +80,61 @@ export const deleteAuction = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+
+
+
+const wss = new WebSocketServer({ port: 8080 });
+
+wss.on('connection', (ws) => {
+  console.log('WebSocket client connected');
+
+  ws.on('message', async (message) => {
+    try {
+      const { auctionId, teamId, playerPrice } = JSON.parse(message);
+      const updatedPlayer = await prisma.player.update({
+        where: { auctionId_teamId: { auctionId, teamId } },
+        data: { price: playerPrice, sold: true },
+      });
+      wss.clients.forEach((client) => {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(updatedPlayer));
+        }
+      });
+    } catch (error) {
+      console.error('Error handling WebSocket message:', error);
+    }
+  });
+
+  ws.on('close', () => {
+    console.log('WebSocket client disconnected');
+  });
+});
+
+export const auctionController = {
+  async startAuction(req, res) {
+    const { id } = req.params;
+    try {
+      const auction = await prisma.auction.findUnique({
+        where: { id },
+        include: { players: true, teams: true },
+      });
+
+      if (!auction) {
+        return res.status(404).json({ error: 'Auction not found' });
+      }
+
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ auction, players: auction.players, teams: auction.teams }));
+        }
+      });
+
+      res.json({ message: 'Auction started' });
+    } catch (error) {
+      console.error('Error starting auction:', error);
+      res.status(500).json({ error: 'Error starting auction' });
+    }
+  },
+};
+

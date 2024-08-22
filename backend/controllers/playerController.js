@@ -3,6 +3,7 @@ const prisma = new PrismaClient();
 
 export const createPlayer = async (req, res) => {
   const { name, age, nationality, type, runs, wickets, price } = req.body;
+  const userId = req.user.id;
 
   try {
     const newPlayer = await prisma.player.create({
@@ -14,6 +15,7 @@ export const createPlayer = async (req, res) => {
         runs,
         wickets,
         price,
+        userId,
       },
     });
     res.status(201).json(newPlayer);

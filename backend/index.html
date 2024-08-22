@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auction Bidding</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .player-card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .player-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .player-name {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .player-price {
+      font-size: 16px;
+      color: #333;
+    }
+
+    .bid-button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .bid-button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Auction Bidding</h1>
+    <div id="player-container">
+      <!-- Player card will be dynamically generated here -->
+    </div>
+    <button id="next-player-button">Next Player</button>
+  </div>
+
+  <script>
+    const playerContainer = document.getElementById('player-container');
+    const nextPlayerButton = document.getElementById('next-player-button');
+    const socket = new WebSocket('ws://localhost:8080');
+
+    let currentPlayerIndex = 0;
+    let currentPlayerPrice;
+    let players = [];
+
+    socket.addEventListener('open', () => {
+      console.log('WebSocket connected');
+
+      // Fetch the auction details and start the auction
+      fetch('/api/auctions/start/123') // Replace '123' with the actual auction ID
+        .then((response) => response.json())
+        .then((data) => {
+          players = data.players;
+          displayPlayer();
+        })
+        .catch((error) => {
+          console.error('Error starting auction:', error);
+        });
+    });
+
+    socket.addEventListener('message', (event) => {
+      const updatedPlayer = JSON.parse(event.data);
+      players = players.map((player) =>
+        player.id === updatedPlayer.id ? updatedPlayer : player
+      );
+      displayPlayer();
+    });
+
+    socket.addEventListener('close', () => {
+      console.log('WebSocket disconnected');
+    });
+
+    function displayPlayer() {
+        const player = players[currentPlayerIndex];
+      const playerCard = document.createElement('div');
+      playerCard.classList.add('player-card');
+
+      const playerInfo = document.createElement('div');
+      playerInfo.classList.add('player-info');
+
+      const playerNameElement = document.createElement('div');
+      playerNameElement.classList.add('player-name');
+      playerNameElement.textContent = player.name;
+
+      currentPlayerPrice = player.price;
+      const playerPriceElement = document.createElement('div');
+      playerPriceElement.classList.add('player-price');
+      playerPriceElement.textContent = `Base Price: $${player.price}`;
+
+      playerInfo.appendChild(playerNameElement);
+      playerInfo.appendChild(playerPriceElement);
+
+      const bidButton = document.createElement('button');
+      bidButton.classList.add('bid-button');
+      bidButton.textContent = 'Bid';
+      bidButton.addEventListener('click', () => {
+        currentPlayerPrice += 1000;
+        playerPriceElement.textContent = `Current Price: $${currentPlayerPrice}`;
+        // Call the backend API to place the bid
+        console.log(`Placing bid for player ${player.name} at $${currentPlayerPrice}`);
+      });
+
+      playerCard.appendChild(playerInfo);
+      playerCard.appendChild(bidButton);
+      playerContainer.innerHTML = '';
+      playerContainer.appendChild(playerCard);
+    }
+
+    function showNextPlayer() {
+      currentPlayerIndex++;
+      if (currentPlayerIndex >= players.length) {
+        currentPlayerIndex = 0;
+      }
+      displayPlayer();
+    }
+
+    function placeBid() {
+      const player = players[currentPlayerIndex];
+      currentPlayerPrice += 1000;
+      socket.send(JSON.stringify({ auctionId: player.auctionId, teamId: 'team-id-here', playerPrice: currentPlayerPrice }));
+    }
+
+    nextPlayerButton.addEventListener('click', showNextPlayer);
+    document.querySelector('.bid-button').addEventListener('click', placeBid);
+  </script>
+</body>
+</html>

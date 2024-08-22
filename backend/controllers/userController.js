@@ -57,6 +57,7 @@ export const login = async (req, res) => {
     if (user && (await bcrypt.compare(password, user.password))) {
       const token = generateToken(user.id);
       res.cookie('token', token, { httpOnly: true });
+      console.log(user);
 
       res.json({
         id: user.id,

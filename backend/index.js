@@ -4,14 +4,14 @@ import teamRoutes from './routes/teamRoutes.js';
 import playerRoutes from './routes/playerRoutes.js';
 import auctionRoutes from './routes/auctionRoutes.js';
 // import teamRoutes from './routes/addPlayerRoutes.js';
-import { setupSocket } from './socket.js';
+// import { setupSocket } from './socket.js';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import userRoutes from './routes/userRoutes.js';
 
 const app = express();
 const server = http.createServer(app);
-setupSocket(server);
+// setupSocket(server);
 
 const PORT = process.env.PORT || 3000;
 
