@@ -18,6 +18,8 @@ model User {
   id        String    @id @default(cuid())
   username  String    @unique
   password  String
+  phone_num String
+  email     String
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   teams     Team[]
@@ -28,6 +30,7 @@ model User {
 model Team {
   id         String    @id @default(cuid())
   name       String
+  description String
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   ownerId    String
@@ -59,6 +62,13 @@ model Player {
 model Auction {
   id          String    @id @default(cuid())
   name        String
+  description String
+  rules_file String
+  start_time  DateTime
+  bid_duration Int
+  max_teams   Int
+  players_per_team Int
+  bid_increment Int
   auctioneerId String
   auctioneer  User      @relation(fields: [auctioneerId], references: [id])
   createdAt   DateTime  @default(now())

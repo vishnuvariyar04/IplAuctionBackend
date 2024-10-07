@@ -4,21 +4,23 @@ import { useRouter } from 'expo-router';
 
 export default function RegisterScreen() {
   const [username, setUsername] = useState('');
-  // const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone_num, setPhone_num] = useState('');
   const router = useRouter();
 
   const handleRegister = async () => {
     try {
-      const response = await fetch('http://192.168.0.102:3000/api/users/register', {
+      const response = await fetch('https://iplauctionbackend-1.onrender.com/api/users/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           username,
-          // email,
           password,
+          email,
+          phone_num
         }),
       });
 
@@ -46,13 +48,7 @@ export default function RegisterScreen() {
         value={username}
         onChangeText={setUsername}
       />
-      {/* <TextInput
-        placeholder="Email"
-        placeholderTextColor="#aaa"
-        className="border-b border-gray-400 text-white w-4/5 my-4"
-        value={email}
-        onChangeText={setEmail}
-      /> */}
+     
       <TextInput
         placeholder="Password"
         secureTextEntry
@@ -60,6 +56,22 @@ export default function RegisterScreen() {
         className="border-b border-gray-400 text-white w-4/5 my-4"
         value={password}
         onChangeText={setPassword}
+      />
+
+      <TextInput
+        placeholder="Email"
+        placeholderTextColor="#aaa"
+        className="border-b border-gray-400 text-white w-4/5 my-4"
+        value={email}
+        onChangeText={setEmail}
+      />
+
+      <TextInput
+        placeholder="phoneNumber"
+        placeholderTextColor="#aaa"
+        className="border-b border-gray-400 text-white w-4/5 my-4"
+        value={phone_num}
+        onChangeText={setPhone_num}
       />
 
       <Button title="Register" onPress={handleRegister} />

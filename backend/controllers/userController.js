@@ -1,10 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-// import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
-
-// dotenv.config();
 
 const { JWT_SECRET } = process.env; // Ensure you have a JWT_SECRET in your environment variables
 
@@ -15,9 +12,9 @@ const generateToken = (id) => {
 
 // Register User
 export const register = async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, email, phone_num } = req.body;
 
-  if (!username || !password) {
+  if (!username || !password || !email || !phone_num) {
     return res.status(400).json({ message: 'Please provide all required fields' });
   }
 
@@ -28,6 +25,8 @@ export const register = async (req, res) => {
       data: {
         username,
         password: hashedPassword,
+        email,
+        phone_num
       },
     });
 
@@ -39,6 +38,7 @@ export const register = async (req, res) => {
       username: user.username,
     });
   } catch (error) {
+    console.error('Error creating user:', error); // Log the error for debugging
     res.status(500).json({ message: 'Error creating user', error });
   }
 };

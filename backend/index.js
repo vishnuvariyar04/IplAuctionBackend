@@ -24,10 +24,10 @@ app.use('/api/players', playerRoutes);
 app.use('/api/auctions', auctionRoutes);
 app.use('/api/teams', teamRoutes);
 
-app.use(cors({
-    origin: 'exp://192.168.0.102:8081', // Replace with your frontend's URL
-    credentials: true,
-  }));
+// app.use(cors({
+//     origin: 'exp://192.168.43.143:8081', // Replace with your frontend's URL
+//     credentials: true,
+//   }));
 
 
 app.get('/', (req, res) => {

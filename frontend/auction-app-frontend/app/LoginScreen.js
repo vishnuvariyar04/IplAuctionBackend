@@ -9,7 +9,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('http://192.168.0.102:3000/api/users/login', { // Replace with your machine's IP address
+      const response = await fetch('http://192.168.43.143:3000/api/users/login', { // Replace with your machine's IP address
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -22,7 +22,7 @@ export default function LoginScreen() {
 
       if (response.ok) {
         Alert.alert('Login Successful');
-        router.push('/LandingScreen'); // Replace with the screen you want to navigate to after login
+        router.push('/index'); // Replace with the screen you want to navigate to after login
       } else {
         const errorData = await response.json();
         Alert.alert('Login Failed', errorData.message || 'An error occurred');
