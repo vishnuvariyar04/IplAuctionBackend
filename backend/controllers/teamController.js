@@ -2,13 +2,14 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export const createTeam = async (req, res) => {
-  const { name } = req.body;
+  const { name, description } = req.body;
   const userId = req.user.id;
 
   try {
     const newTeam = await prisma.team.create({
       data: {
         name,
+        description,
         ownerId: userId,
       },
     });

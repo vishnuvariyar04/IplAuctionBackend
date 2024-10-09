@@ -3,13 +3,20 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export const createAuction = async (req, res) => {
-  const { name } = req.body;
+  const { name, description, rules_file, start_time, bid_duration, max_teams, players_per_team, bid_increment } = req.body;
   const auctioneerId = req.user.id;
 
   try {
     const newAuction = await prisma.auction.create({
       data: {
         name,
+        description,
+        rules_file,
+        start_time,
+        bid_duration,
+        max_teams,
+        players_per_team,
+        bid_increment,
         auctioneerId,
       },
     });
@@ -52,6 +59,7 @@ export const getAuction = async (req, res) => {
 export const updateAuction = async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
+  
 
   try {
     const updatedAuction = await prisma.auction.update({
