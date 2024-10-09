@@ -14,6 +14,8 @@ const generateToken = (id) => {
 export const register = async (req, res) => {
   const { username, password, email, phone_num } = req.body;
 
+  console.log('Incoming request:', req.body); // Log the incoming request
+
   if (!username || !password || !email || !phone_num) {
     return res.status(400).json({ message: 'Please provide all required fields' });
   }
@@ -79,6 +81,8 @@ export const getMe = async (req, res) => {
     res.json({
       id: user.id,
       username: user.username,
+      email: user.email,
+      phone_num: user.phone_num,
     });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching user', error });

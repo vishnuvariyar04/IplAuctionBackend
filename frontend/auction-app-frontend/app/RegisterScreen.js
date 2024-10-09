@@ -26,7 +26,7 @@ export default function RegisterScreen() {
 
       if (response.ok) {
         Alert.alert('Registration Successful');
-        router.push('/LoginScreen');
+        router.push('/Dashboard');
       } else {
         const errorData = await response.json();
         Alert.alert('Registration Failed', errorData.message || 'An error occurred');
