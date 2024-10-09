@@ -76,16 +76,29 @@ export const login = async (req, res) => {
 // Get Current User
 export const getMe = async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: {
+        auctions: true,
+        teams: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
     res.json({
       id: user.id,
       username: user.username,
       email: user.email,
       phone_num: user.phone_num,
+      auctions: user.auctions,
+      teams: user.teams,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching user', error });
+    console.error('Error fetching user:', error);
+    res.status(500).json({ message: 'Error fetching user', error: error.message });
   }
 };
 

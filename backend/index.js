@@ -8,7 +8,19 @@ import auctionRoutes from './routes/auctionRoutes.js';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import userRoutes from './routes/userRoutes.js';
+import multer from 'multer';
+import path from 'path';
 
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, 'uploads/') // Make sure this directory exists
+    },
+    filename: function (req, file, cb) {
+      cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname))
+    }
+  });
+const upload = multer({ storage: storage });
 const app = express();
 const server = http.createServer(app);
 // setupSocket(server);
@@ -16,6 +28,8 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(upload.any());
 app.use(cors());
 app.use(cookieParser());
 

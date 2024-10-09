@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
@@ -21,6 +22,9 @@ export default function LoginScreen() {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        // Store the token in AsyncStorage
+        // await AsyncStorage.setItem('authToken', data.token);
         Alert.alert('Login Successful');
         router.push('/Dashboard'); // Replace with the screen you want to navigate to after login
       } else {
