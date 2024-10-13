@@ -1,31 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import SideNavigation from './SideNavigation';
 
 export default function ManageAuctions() {
   const [auctions, setAuctions] = useState([]);
+  const [userData, setUserData] = useState(null);
+  const [showSideNav, setShowSideNav] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    fetchAuctions();
+    fetchUserData();
   }, []);
 
-  const fetchAuctions = async () => {
+  const fetchUserData = async () => {
     try {
-      const response = await fetch('https://iplauctionbackend-1.onrender.com/api/auctions', {
+      const authToken = await AsyncStorage.getItem('authToken');
+      const response = await fetch('https://iplauctionbackend-1.onrender.com/api/users/me', {
         headers: {
-          // Add authentication header if required
-          // 'Authorization': `Bearer ${authToken}`,
+          'Authorization': `Bearer ${authToken}`,
         },
       });
       if (response.ok) {
         const data = await response.json();
-        setAuctions(data);
+        setUserData(data);
+        setAuctions(data.auctions || []);
       } else {
-        Alert.alert('Error', 'Failed to fetch auctions');
+        Alert.alert('Error', 'Failed to fetch user data');
       }
     } catch (error) {
-      console.error('Error fetching auctions:', error);
+      console.error('Error fetching user data:', error);
       Alert.alert('Error', 'An unexpected error occurred');
     }
   };
@@ -43,14 +48,36 @@ export default function ManageAuctions() {
     </TouchableOpacity>
   );
 
+  const toggleSideNav = () => {
+    setShowSideNav(!showSideNav);
+  };
+
   return (
-    <View className="flex-1 bg-black p-4">
-      <Text className="text-white text-2xl font-bold mb-4">Manage Auctions</Text>
-      <FlatList
-        data={auctions}
-        renderItem={renderAuctionCard}
-        keyExtractor={(item) => item.id}
-      />
+    <View className="flex-1 bg-black">
+      <View className={`flex-1 ${showSideNav ? 'ml-64' : ''}`}>
+        <TouchableOpacity onPress={toggleSideNav} className="absolute top-4 left-4 z-10">
+          <Text className="text-white text-2xl">☰</Text>
+        </TouchableOpacity>
+        
+        <View className="flex-1 p-4 mt-12">
+          <Text className="text-white text-2xl font-bold mb-4">Manage Auctions</Text>
+          {auctions.length > 0 ? (
+            <FlatList
+              data={auctions}
+              renderItem={renderAuctionCard}
+              keyExtractor={(item) => item.id}
+            />
+          ) : (
+            <Text className="text-white text-lg">You haven't created any auctions yet.</Text>
+          )}
+        </View>
+      </View>
+      
+      {showSideNav && (
+        <View className="absolute top-0 left-0 bottom-0">
+          <SideNavigation onClose={toggleSideNav} />
+        </View>
+      )}
     </View>
   );
 }

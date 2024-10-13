@@ -81,6 +81,7 @@ export const getMe = async (req, res) => {
       include: {
         auctions: true,
         teams: true,
+        player: true,
       },
     });
 
@@ -95,6 +96,7 @@ export const getMe = async (req, res) => {
       phone_num: user.phone_num,
       auctions: user.auctions,
       teams: user.teams,
+      player: user.player,
     });
   } catch (error) {
     console.error('Error fetching user:', error);
