@@ -9,6 +9,7 @@ export default function PlayerProfile() {
   const [playerData, setPlayerData] = useState(null);
   const [showSideNav, setShowSideNav] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [playerAuctions, setPlayerAuctions] = useState([]);
   const navigation = useNavigation();
   const router = useRouter();
 
@@ -19,14 +20,6 @@ export default function PlayerProfile() {
   const fetchPlayerData = async () => {
     try {
       const authToken = await AsyncStorage.getItem('authToken');
-      
-      // if (!authToken) {
-      //   console.error('Auth token is missing');
-      //   setLoading(false);
-      //   Alert.alert('Error', 'Please log in again to view your profile.');
-      //   return;
-      // }
-
       console.log('Fetching user data');
       
       const response = await fetch('https://iplauctionbackend-1.onrender.com/api/users/me', {
@@ -40,6 +33,7 @@ export default function PlayerProfile() {
         console.log('User data received:', data);
         if (data.player) {
           setPlayerData(data.player);
+          fetchPlayerAuctions(data.player.id);
         } else {
           Alert.alert('Info', 'No player profile found. Please register as a player.');
         }
@@ -53,6 +47,26 @@ export default function PlayerProfile() {
       Alert.alert('Error', 'An unexpected error occurred while fetching user data.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPlayerAuctions = async (playerId) => {
+    try {
+      const authToken = await AsyncStorage.getItem('authToken');
+      const response = await fetch(`https://iplauctionbackend-1.onrender.com/api/players/${playerId}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPlayerAuctions(data.auction || []);
+      } else {
+        console.error('Failed to fetch player auctions');
+      }
+    } catch (error) {
+      console.error('Error fetching player auctions:', error);
     }
   };
 
@@ -87,6 +101,18 @@ export default function PlayerProfile() {
         ) : (
           <View className="bg-gray-800 p-4 rounded-lg">
             <Text className="text-white text-lg text-center">No player data available. Please register as a player.</Text>
+          </View>
+        )}
+        {playerAuctions.length > 0 && (
+          <View className="mt-6">
+            <Text className="text-white text-xl font-bold mb-4">Joined Auctions</Text>
+            {playerAuctions.map((auction) => (
+              <View key={auction.id} className="bg-gray-800 p-4 rounded-lg mb-4 shadow-md">
+                <Text className="text-green-400 text-lg font-bold mb-2">{auction.name}</Text>
+                <Text className="text-gray-300 mb-2">{auction.description}</Text>
+                <Text className="text-gray-400">Start Time: {new Date(auction.start_time).toLocaleString()}</Text>
+              </View>
+            ))}
           </View>
         )}
       </ScrollView>
