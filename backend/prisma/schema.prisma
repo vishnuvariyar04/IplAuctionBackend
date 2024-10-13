@@ -48,8 +48,10 @@ model Player {
   runs        Int
   wickets     Int
   price       Int
-  team        Team[]
-  auction     Auction[]
+  teamId      String?
+  team        Team?     @relation(fields: [teamId], references: [id])
+  auctionId   String?
+  auction     Auction?  @relation(fields: [auctionId], references: [id])
   userId      String     @unique
   user        User      @relation(fields: [userId], references: [id])
   createdAt   DateTime  @default(now())
