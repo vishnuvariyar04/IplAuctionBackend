@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Profile() {
   const [userData, setUserData] = useState(null);
@@ -11,19 +12,17 @@ export default function Profile() {
 
   const fetchUserData = async () => {
     try {
+      const authToken = await AsyncStorage.getItem('authToken');
       const response = await fetch('https://iplauctionbackend-1.onrender.com/api/users/me', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          // Add your authentication token here if required
-          // 'Authorization': `Bearer ${your_auth_token}`
+          'Authorization': `Bearer ${authToken}`
         },
       });
 
       if (response.ok) {
         const data = await response.json();
-        console.log('User data received:', data);
-        // Adjust this part based on the actual structure of your API response
         setUserData({
           username: data.username || data.user?.username,
           email: data.email || data.user?.email,
@@ -39,26 +38,28 @@ export default function Profile() {
     }
   };
 
-  if (loading) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#4ade80" />
-      </View>
-    );
-  }
+  const ProfileItem = ({ label, value }) => (
+    <View className="flex-row justify-between items-center mb-4">
+      <Text className="text-gray-400 text-lg">{label}:</Text>
+      <Text className="text-white text-lg font-semibold">{value || 'N/A'}</Text>
+    </View>
+  );
 
   return (
-    <View className="flex-1 p-4">
-      <Text className="text-white text-2xl font-bold mb-4">User Profile</Text>
-      {userData ? (
-  <>
-    <Text className="text-white text-lg mb-2">Username: {userData.username || 'N/A'}</Text>
-    <Text className="text-white text-lg mb-2">Email: {userData.email || 'N/A'}</Text>
-    <Text className="text-white text-lg mb-2">Phone: {userData.phone_num || 'N/A'}</Text>
-  </>
-) : (
-  <Text className="text-white text-lg">Failed to load user data</Text>
-)}
+    <View className="flex-1 bg-gray-900 p-4">
+      {loading ? (
+        <ActivityIndicator size="large" color="#4ade80" />
+      ) : userData ? (
+        <View className="bg-gray-800 rounded-lg p-6 shadow-lg">
+          <ProfileItem label="Username" value={userData.username} />
+          <ProfileItem label="Email" value={userData.email} />
+          <ProfileItem label="Phone" value={userData.phone_num} />
+        </View>
+      ) : (
+        <View className="bg-gray-800 p-4 rounded-lg">
+          <Text className="text-white text-lg text-center">Failed to load user data</Text>
+        </View>
+      )}
     </View>
   );
 }

@@ -37,7 +37,11 @@ export default function Dashboard() {
       </View>
 
       {/* Side Navigation */}
-      {showSideNav && <SideNavigation onClose={() => setShowSideNav(false)} />}
+      {showSideNav && (
+        <View className="absolute top-0 left-0 bottom-0 right-0 bg-black bg-opacity-50">
+          <SideNavigation onClose={() => setShowSideNav(false)} />
+        </View>
+      )}
 
       {/* Create Options */}
       {showCreateOptions && <CreateOptions onClose={() => setShowCreateOptions(false)} />}
