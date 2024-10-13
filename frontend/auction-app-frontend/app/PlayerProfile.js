@@ -56,35 +56,49 @@ export default function PlayerProfile() {
     setShowSideNav(!showSideNav);
   };
 
-  const content = (
-    <View className="flex-1">
-      <TouchableOpacity onPress={toggleSideNav} className="absolute top-4 left-4 z-10">
-        <Text className="text-white text-2xl">☰</Text>
-      </TouchableOpacity>
+  return (
+    <View className="flex-1 bg-gray-900">
+      <View className="flex-row justify-between items-center p-4 bg-gray-800">
+        <TouchableOpacity onPress={toggleSideNav}>
+          <Text className="text-white text-2xl">☰</Text>
+        </TouchableOpacity>
+        <Text className="text-white text-xl font-bold">Player Profile</Text>
+        <View style={{width: 24}} />
+      </View>
 
-      {showSideNav && <SideNavigation onClose={toggleSideNav} />}
-
-      <ScrollView className={`flex-1 p-4 ${showSideNav ? 'ml-64' : ''}`}>
-        <Text className="text-white text-2xl font-bold mb-4">Player Profile</Text>
+      <ScrollView className="flex-1 p-4">
         {loading ? (
           <ActivityIndicator size="large" color="#4ade80" />
         ) : playerData ? (
-          <>
-            <Text className="text-white text-lg">Name: {playerData.name}</Text>
-            <Text className="text-white text-lg">Age: {playerData.age}</Text>
-            <Text className="text-white text-lg">Nationality: {playerData.nationality}</Text>
-            <Text className="text-white text-lg">Type: {playerData.type}</Text>
-            <Text className="text-white text-lg">Runs: {playerData.runs}</Text>
-            <Text className="text-white text-lg">Wickets: {playerData.wickets}</Text>
-            <Text className="text-white text-lg">Price: {playerData.price}</Text>
-            <Text className="text-white text-lg">Sold: {playerData.sold ? 'Yes' : 'No'}</Text>
-          </>
+          <View className="bg-gray-800 rounded-lg p-6 shadow-lg">
+            <ProfileItem label="Name" value={playerData.name} />
+            <ProfileItem label="Age" value={playerData.age} />
+            <ProfileItem label="Nationality" value={playerData.nationality} />
+            <ProfileItem label="Type" value={playerData.type} />
+            <ProfileItem label="Runs" value={playerData.runs} />
+            <ProfileItem label="Wickets" value={playerData.wickets} />
+            <ProfileItem label="Price" value={playerData.price} />
+            <ProfileItem label="Sold" value={playerData.sold ? 'Yes' : 'No'} />
+          </View>
         ) : (
-          <Text className="text-white text-lg">No player data available. Please register as a player.</Text>
+          <View className="bg-gray-800 p-4 rounded-lg">
+            <Text className="text-white text-lg text-center">No player data available. Please register as a player.</Text>
+          </View>
         )}
       </ScrollView>
+
+      {showSideNav && (
+        <View className="absolute top-0 left-0 bottom-0 right-0 bg-black bg-opacity-50">
+          <SideNavigation onClose={toggleSideNav} />
+        </View>
+      )}
     </View>
   );
-
-  return content;
 }
+
+const ProfileItem = ({ label, value }) => (
+  <View className="flex-row justify-between items-center mb-4">
+    <Text className="text-gray-400 text-lg">{label}:</Text>
+    <Text className="text-white text-lg font-semibold">{value}</Text>
+  </View>
+);

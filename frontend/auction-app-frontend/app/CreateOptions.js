@@ -13,7 +13,7 @@ export default function CreateOptions({ onClose }) {
       <TouchableOpacity className="py-2" onPress={() => router.push('/CreateAuction')}>
         <Text className="text-white text-lg">Create Auction</Text>
       </TouchableOpacity>
-      <TouchableOpacity className="py-2">
+      <TouchableOpacity className="py-2" onPress={() => router.push('/CreateTeam')}>
         <Text className="text-white text-lg">Create Team</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={onClose} className="absolute top-2 right-2">
