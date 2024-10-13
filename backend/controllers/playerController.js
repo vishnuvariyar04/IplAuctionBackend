@@ -41,13 +41,28 @@ export const getPlayer = async (req, res) => {
   try {
     const player = await prisma.player.findUnique({
       where: { id },
+      include: {
+        auction: true,
+      },
     });
 
     if (!player) {
       return res.status(404).json({ message: 'Player not found' });
     }
+    
 
-    res.status(200).json(player);
+    res.json({
+      id: player.id,
+      name: player.name,
+      age: player.age,
+      nationality: player.nationality,
+      type: player.type,
+      runs: player.runs,
+      wickets: player.wickets,
+      price: player.price,
+      sold: player.sold,
+      auction: player.auction,
+    });
   } catch (error) {
     console.error('Error fetching player:', error);
     res.status(500).json({ error: 'Internal Server Error' });

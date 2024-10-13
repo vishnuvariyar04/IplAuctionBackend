@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SideNavigation from './SideNavigation';
+import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 
 export default function PlayerProfile() {
   const [playerData, setPlayerData] = useState(null);
   const [showSideNav, setShowSideNav] = useState(false);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
+  const router = useRouter();
 
   useEffect(() => {
     fetchPlayerData();
@@ -86,6 +90,15 @@ export default function PlayerProfile() {
           </View>
         )}
       </ScrollView>
+
+      {playerData && (
+        <TouchableOpacity 
+          className="absolute bottom-6 right-6 bg-blue-500 p-4 rounded-full"
+          onPress={() => router.push('/Auctions')}
+        >
+          <Text className="text-white font-bold">Join Auction</Text>
+        </TouchableOpacity>
+      )}
 
       {showSideNav && (
         <View className="absolute top-0 left-0 bottom-0 right-0 bg-black bg-opacity-50">
