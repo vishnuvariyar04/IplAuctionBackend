@@ -62,10 +62,14 @@ export default function ManageTeams() {
       <ScrollView className="flex-1 p-4">
         {teamData && teamData.length > 0 ? (
           teamData.map((team) => (
-            <View key={team.id} className="bg-gray-800 p-4 rounded-lg mb-4 shadow-md">
+            <TouchableOpacity
+              key={team.id}
+              className="bg-gray-800 p-4 rounded-lg mb-4 shadow-md"
+              onPress={() => router.push({pathname: '/AuctionsJoined', params: { id: team.id }})}
+            >
               <Text className="text-green-400 text-lg font-bold mb-2">{team.name}</Text>
               <Text className="text-gray-300">{team.description}</Text>
-            </View>
+            </TouchableOpacity>
           ))
         ) : (
           <View className="bg-gray-800 p-4 rounded-lg">

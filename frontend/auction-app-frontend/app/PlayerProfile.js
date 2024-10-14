@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SideNavigation from './SideNavigation';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 
 export default function PlayerProfile() {
@@ -13,9 +13,11 @@ export default function PlayerProfile() {
   const navigation = useNavigation();
   const router = useRouter();
 
-  useEffect(() => {
-    fetchPlayerData();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchPlayerData();
+    }, [])
+  );
 
   const fetchPlayerData = async () => {
     try {
@@ -61,12 +63,13 @@ export default function PlayerProfile() {
 
       if (response.ok) {
         const data = await response.json();
-        setPlayerAuctions(data.auction || []);
+        console.log('Player data received:', JSON.stringify(data, null, 2));
+        setPlayerAuctions(data.auction ? [data.auction] : []);
       } else {
-        console.error('Failed to fetch player auctions');
+        console.error('Failed to fetch player auction');
       }
     } catch (error) {
-      console.error('Error fetching player auctions:', error);
+      console.error('Error fetching player auction:', error);
     }
   };
 
@@ -103,16 +106,18 @@ export default function PlayerProfile() {
             <Text className="text-white text-lg text-center">No player data available. Please register as a player.</Text>
           </View>
         )}
-        {playerAuctions.length > 0 && (
+        {playerAuctions && playerAuctions.length > 0 ? (
           <View className="mt-6">
-            <Text className="text-white text-xl font-bold mb-4">Joined Auctions</Text>
-            {playerAuctions.map((auction) => (
-              <View key={auction.id} className="bg-gray-800 p-4 rounded-lg mb-4 shadow-md">
-                <Text className="text-green-400 text-lg font-bold mb-2">{auction.name}</Text>
-                <Text className="text-gray-300 mb-2">{auction.description}</Text>
-                <Text className="text-gray-400">Start Time: {new Date(auction.start_time).toLocaleString()}</Text>
-              </View>
-            ))}
+            <Text className="text-white text-xl font-bold mb-4">Joined Auction</Text>
+            <View className="bg-gray-800 p-4 rounded-lg mb-4 shadow-md">
+              <Text className="text-green-400 text-lg font-bold mb-2">{playerAuctions[0].name}</Text>
+              <Text className="text-gray-300 mb-2">{playerAuctions[0].description}</Text>
+              <Text className="text-gray-400">Start Time: {new Date(playerAuctions[0].start_time).toLocaleString()}</Text>
+            </View>
+          </View>
+        ) : (
+          <View className="mt-6">
+            <Text className="text-white text-xl font-bold mb-4">No Joined Auction</Text>
           </View>
         )}
       </ScrollView>

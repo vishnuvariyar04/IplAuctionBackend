@@ -2,17 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 
 export default function Auctions() {
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [playerId, setPlayerId] = useState(null);
   const router = useRouter();
+  const { teamId } = useLocalSearchParams();
 
   useEffect(() => {
     fetchAuctions();
-    fetchPlayerId();
-  }, []);
+    if (!teamId) {
+      fetchPlayerId();
+    }
+  }, [teamId]);
 
   const fetchAuctions = async () => {
     try {
@@ -52,25 +56,33 @@ export default function Auctions() {
   };
 
   const joinAuction = async (auctionId) => {
-    if (!playerId) {
-      Alert.alert('Error', 'Player ID not found');
-      return;
-    }
-
     try {
       const authToken = await AsyncStorage.getItem('authToken');
-      const response = await fetch(`https://iplauctionbackend-1.onrender.com/api/players/${playerId}/join-auction`, {
+      let endpoint;
+      let body;
+
+      if (teamId) {
+        endpoint = `https://iplauctionbackend-1.onrender.com/api/teams/${teamId}/join-auction`;
+        body = JSON.stringify({ auctionId });
+      } else if (playerId) {
+        endpoint = `https://iplauctionbackend-1.onrender.com/api/players/${playerId}/join-auction`;
+        body = JSON.stringify({ auctionId });
+      } else {
+        Alert.alert('Error', 'No player or team found. Please register as a player or create a team first.');
+        return;
+      }
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ auctionId }),
+        body: body,
       });
 
       if (response.ok) {
-        Alert.alert('Success', 'You have joined the auction');
-        // Optionally, you can update the UI or refetch the auctions here
+        Alert.alert('Success', teamId ? 'Your team has joined the auction' : 'You have joined the auction as a player');
       } else {
         const errorData = await response.json();
         Alert.alert('Error', errorData.message || 'Failed to join auction');
