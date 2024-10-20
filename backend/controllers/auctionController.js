@@ -59,13 +59,19 @@ export const getAuction = async (req, res) => {
   try {
     const auction = await prisma.auction.findUnique({
       where: { id },
+      include: { teams: true, players: true },
     });
 
     if (!auction) {
       return res.status(404).json({ message: 'Auction not found' });
     }
 
-    res.status(200).json(auction);
+    res.json({
+      id: auction.id,
+      name: auction.name,
+      teams: auction.teams,
+      players: auction.players,
+    });
   } catch (error) {
     console.error('Error fetching auction:', error);
     res.status(500).json({ error: 'Internal Server Error' });
