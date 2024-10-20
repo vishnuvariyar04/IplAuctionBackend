@@ -101,31 +101,3 @@ export const deletePlayer = async (req, res) => {
   }
 };
 
-export const joinAuction = async (req, res) => {
-  const { id } = req.params; // playerId
-  const { auctionId } = req.body;
-
-  try {
-    const auction = await prisma.auction.findUnique({
-      where: { id: auctionId },
-    });
-
-    if (!auction) {
-      return res.status(404).json({ message: 'Auction not found' });
-    }
-
-    const updatedPlayer = await prisma.player.update({
-      where: { id },
-      data: {
-        auction: {
-          connect: { id: auctionId },
-        },
-      },
-    });
-
-    res.status(200).json(updatedPlayer);
-  } catch (error) {
-    console.error('Error in joinAuction:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-};

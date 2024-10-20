@@ -39,6 +39,7 @@ export default function ManageAuctions() {
     <TouchableOpacity
       className="bg-gray-800 p-4 rounded mb-4"
       onPress={() => router.push(`/AuctionDetails/${item.id}`)}
+      
     >
       <Text className="text-white text-lg font-bold">{item.name}</Text>
       <Text className="text-gray-400">{item.description}</Text>
@@ -68,7 +69,7 @@ export default function ManageAuctions() {
             <TouchableOpacity
               key={auction.id}
               className="bg-gray-800 p-4 rounded-lg mb-4 shadow-md"
-              onPress={() => router.push(`/AuctionDetails/${auction.id}`)}
+              onPress={() => router.push({pathname: '/AuctionDetails', params: { id: auction.id }})}
             >
               <Text className="text-green-400 text-lg font-bold mb-2">{auction.name}</Text>
               <Text className="text-gray-300 mb-2">{auction.description}</Text>
