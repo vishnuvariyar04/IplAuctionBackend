@@ -5,7 +5,6 @@ import {
   getPlayer,
   updatePlayer,
   deletePlayer,
-  joinAuction,
 } from '../controllers/playerController.js';
 import { authenticateUser } from '../middleware/authMiddleware.js';
 
@@ -16,6 +15,6 @@ router.get('/', getPlayers);
 router.get('/:id', getPlayer);
 router.put('/:id', authenticateUser, updatePlayer);
 router.delete('/:id', authenticateUser, deletePlayer);
-router.post('/:id/join-auction', authenticateUser, joinAuction);
+
 
 export default router;
