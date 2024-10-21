@@ -69,6 +69,13 @@ export const getAuction = async (req, res) => {
     res.json({
       id: auction.id,
       name: auction.name,
+      description: auction.description,
+      rules_file: auction.rules_file,
+      start_time: auction.start_time,
+      bid_duration: auction.bid_duration,
+      max_teams: auction.max_teams,
+      players_per_team: auction.players_per_team,
+      bid_increment: auction.bid_increment,
       teams: auction.teams,
       players: auction.players,
     });
