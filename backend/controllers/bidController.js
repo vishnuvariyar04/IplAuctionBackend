@@ -62,7 +62,11 @@ const initializeAuction = async (auctionId) => {
   if (timeDifference > 0) {
     // Auction hasn't started yet
     setTimeout(() => startAuction(auctionId), timeDifference);
-    currentAuctions[auctionId] = { status: 'waiting', startTime };
+    currentAuctions[auctionId] = { 
+      status: 'waiting', 
+      startTime,
+      endTime: new Date(startTime.getTime() + auction.players.length * auction.bid_duration * 1000)
+    };
   } else {
     // Auction should have started
     startAuction(auctionId);
@@ -175,4 +179,13 @@ export const placeBid = (req, res) => {
 
 export const getBidsForAuction = (req, res) => {
   res.status(200).json({ message: 'Bids are managed in real-time' });
+};
+
+const getCurrentAuctionData = (auctionId) => {
+  const auction = currentAuctions[auctionId];
+  return auction ? {
+    status: auction.status,
+    currentPlayer: getCurrentPlayerData(auctionId),
+    endTime: auction.endTime
+  } : null;
 };
