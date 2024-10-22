@@ -76,8 +76,22 @@ const startAuctionTimer = (auctionId) => {
   }, 1000);
 };
 
-const moveToNextPlayer = (auctionId) => {
+const moveToNextPlayer = async (auctionId) => {
   const auction = currentAuctions[auctionId];
+  const currentPlayer = auction.players[auction.currentPlayerIndex];
+
+  // Update the current player's team if there was a bid
+  if (auction.highestBidder) {
+    await updatePlayerTeam(currentPlayer.id, auction.highestBidder);
+    io.to(auctionId).emit('playerSold', { 
+      playerId: currentPlayer.id, 
+      teamId: auction.highestBidder, 
+      amount: auction.currentBid 
+    });
+  } else {
+    io.to(auctionId).emit('playerUnsold', { playerId: currentPlayer.id });
+  }
+
   auction.currentPlayerIndex++;
   
   if (auction.currentPlayerIndex >= auction.players.length) {
@@ -113,6 +127,27 @@ const getCurrentPlayerData = (auctionId) => {
     timeLeft: auction.timeLeft,
     highestBidder: auction.highestBidder
   };
+};
+
+const updatePlayerTeam = async (playerId, teamId) => {
+  try {
+    const response = await fetch('https://iplauctionbackend-1.onrender.com/api/addPlayer/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ playerId, teamId }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update player team');
+    }
+
+    const updatedPlayer = await response.json();
+    console.log('Player updated:', updatedPlayer);
+  } catch (error) {
+    console.error('Error updating player team:', error);
+  }
 };
 
 export const placeBid = (req, res) => {
