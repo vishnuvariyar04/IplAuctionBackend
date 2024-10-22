@@ -12,6 +12,7 @@ export default function BiddingPage() {
   const [currentBid, setCurrentBid] = useState(0);
   const [bidHistory, setBidHistory] = useState([]);
   const [socket, setSocket] = useState(null);
+  const [auctionStatus, setAuctionStatus] = useState('waiting');
   const router = useRouter();
   const [teams, setTeams] = useState({});
 
@@ -20,12 +21,15 @@ export default function BiddingPage() {
     const newSocket = io('https://iplauctionbackend-1.onrender.com');
     setSocket(newSocket);
 
-    newSocket.emit('joinAuction', auctionId);
+    newSocket.emit('joinAuction', { auctionId, teamId });
 
+    newSocket.on('auctionStatus', handleAuctionStatus);
+    newSocket.on('auctionStarted', handleAuctionStarted);
     newSocket.on('bidUpdate', handleBidUpdate);
     newSocket.on('playerUpdate', handlePlayerUpdate);
     newSocket.on('timerUpdate', handleTimerUpdate);
     newSocket.on('auctionEnded', handleAuctionEnded);
+    newSocket.on('error', handleError);
 
     return () => {
       newSocket.disconnect();
@@ -59,6 +63,18 @@ export default function BiddingPage() {
     }
   };
 
+  const handleAuctionStatus = (data) => {
+    setAuctionStatus(data.status);
+    if (data.currentPlayer) {
+      handlePlayerUpdate(data.currentPlayer);
+    }
+  };
+
+  const handleAuctionStarted = (data) => {
+    setAuctionStatus('active');
+    handlePlayerUpdate(data.currentPlayer);
+  };
+
   const handlePlayerUpdate = (data) => {
     setCurrentPlayer(data.player);
     setCurrentBid(data.currentBid);
@@ -81,8 +97,12 @@ export default function BiddingPage() {
     router.back();
   };
 
+  const handleError = (error) => {
+    Alert.alert('Error', error.message);
+  };
+
   const handleBid = () => {
-    if (socket && currentPlayer) {
+    if (socket && currentPlayer && auctionStatus === 'active') {
       const newBid = currentBid + (auctionData?.bid_increment || 0);
       socket.emit('placeBid', {
         auctionId,
@@ -98,6 +118,14 @@ export default function BiddingPage() {
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   };
+
+  if (auctionStatus === 'waiting') {
+    return (
+      <View className="flex-1 bg-gray-900 justify-center items-center">
+        <Text className="text-white text-xl">Waiting for auction to start...</Text>
+      </View>
+    );
+  }
 
   if (!currentPlayer || !auctionData) {
     return (
@@ -122,8 +150,13 @@ export default function BiddingPage() {
       <TouchableOpacity 
         className="bg-green-500 p-4 rounded mb-4"
         onPress={handleBid}
+        disabled={auctionStatus !== 'active'}
       >
-        <Text className="text-white font-bold text-center">Place Bid (${(currentBid + auctionData.bid_increment).toLocaleString()})</Text>
+        <Text className="text-white font-bold text-center">
+          {auctionStatus === 'active' 
+            ? `Place Bid (${(currentBid + auctionData.bid_increment).toLocaleString()})`
+            : 'Waiting for auction to start'}
+        </Text>
       </TouchableOpacity>
       <FlatList
         data={bidHistory}

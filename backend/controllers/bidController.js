@@ -16,7 +16,8 @@ export const initializeBidController = (server) => {
   io.on('connection', (socket) => {
     console.log('A user connected');
 
-    socket.on('joinAuction', async (auctionId) => {
+    socket.on('joinAuction', async (data) => {
+      const { auctionId, teamId } = data;
       socket.join(auctionId);
       console.log(`User joined auction: ${auctionId}`);
 
@@ -24,7 +25,12 @@ export const initializeBidController = (server) => {
         await initializeAuction(auctionId);
       }
 
-      socket.emit('playerUpdate', getCurrentPlayerData(auctionId));
+      const auctionData = getCurrentAuctionData(auctionId);
+      if (auctionData) {
+        socket.emit('auctionStatus', auctionData);
+      } else {
+        socket.emit('error', { message: 'Auction not found or not started' });
+      }
     });
 
     socket.on('placeBid', async (data) => {
@@ -49,16 +55,41 @@ const initializeAuction = async (auctionId) => {
     return;
   }
 
+  const startTime = new Date(auction.start_time);
+  const currentTime = new Date();
+  const timeDifference = startTime.getTime() - currentTime.getTime();
+
+  if (timeDifference > 0) {
+    // Auction hasn't started yet
+    setTimeout(() => startAuction(auctionId), timeDifference);
+    currentAuctions[auctionId] = { status: 'waiting', startTime };
+  } else {
+    // Auction should have started
+    startAuction(auctionId);
+  }
+};
+
+const startAuction = async (auctionId) => {
+  const auction = await prisma.auction.findUnique({
+    where: { id: auctionId },
+    include: { players: true }
+  });
+
+  if (!auction) return;
+
   currentAuctions[auctionId] = {
+    status: 'active',
     currentPlayerIndex: 0,
     players: auction.players,
     currentBid: auction.players[0].price,
     timeLeft: auction.bid_duration,
     timer: null,
-    highestBidder: null
+    highestBidder: null,
+    endTime: new Date(Date.now() + auction.players.length * auction.bid_duration * 1000)
   };
 
   startAuctionTimer(auctionId);
+  io.to(auctionId).emit('auctionStarted', getCurrentAuctionData(auctionId));
 };
 
 const startAuctionTimer = (auctionId) => {
@@ -93,8 +124,7 @@ const moveToNextPlayer = async (auctionId) => {
   auction.currentPlayerIndex++;
   
   if (auction.currentPlayerIndex >= auction.players.length) {
-    io.to(auctionId).emit('auctionEnded');
-    delete currentAuctions[auctionId];
+    endAuction(auctionId);
   } else {
     auction.currentBid = auction.players[auction.currentPlayerIndex].price;
     auction.timeLeft = 60; // Reset timer for new player
@@ -106,21 +136,23 @@ const moveToNextPlayer = async (auctionId) => {
 
 const handleBid = async (auctionId, playerId, teamId, amount) => {
   const auction = currentAuctions[auctionId];
-  if (amount > auction.currentBid) {
+  if (auction && auction.status === 'active' && amount > auction.currentBid) {
     auction.currentBid = amount;
     auction.highestBidder = teamId;
+    auction.timeLeft = 60; // Reset timer on new bid
     io.to(auctionId).emit('bidUpdate', { playerId, teamId, amount });
+    io.to(auctionId).emit('playerUpdate', getCurrentPlayerData(auctionId));
   }
 };
 
 const getCurrentPlayerData = (auctionId) => {
   const auction = currentAuctions[auctionId];
-  return {
+  return auction ? {
     player: auction.players[auction.currentPlayerIndex],
     currentBid: auction.currentBid,
     timeLeft: auction.timeLeft,
     highestBidder: auction.highestBidder
-  };
+  } : null;
 };
 
 const updatePlayerTeam = async (playerId, teamId) => {
