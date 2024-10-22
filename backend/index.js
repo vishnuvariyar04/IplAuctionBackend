@@ -52,6 +52,5 @@ app.get('/', (req, res) => {
 
 const serverInstance = server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  initializeBidController(serverInstance);
 });
-
-initializeBidController(serverInstance);
