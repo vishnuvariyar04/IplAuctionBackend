@@ -10,7 +10,8 @@ import cookieParser from 'cookie-parser';
 import userRoutes from './routes/userRoutes.js';
 import multer from 'multer';
 import path from 'path';
-
+import { initializeBidController } from './controllers/bidController.js';
+import bidRoutes from './routes/bidRoutes.js';
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -37,6 +38,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/auctions', auctionRoutes);
 app.use('/api/teams', teamRoutes);
+app.use('/api/bids', bidRoutes);
 
 // app.use(cors({
 //     origin: 'exp://192.168.43.143:8081', // Replace with your frontend's URL
@@ -48,6 +50,8 @@ app.get('/', (req, res) => {
     res.send('Hello');
 });
 
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+const serverInstance = server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
+
+initializeBidController(serverInstance);

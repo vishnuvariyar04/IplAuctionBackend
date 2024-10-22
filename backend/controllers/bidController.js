@@ -1,31 +1,40 @@
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { Server } from 'socket.io';
 
-export const placeBid = async (req, res) => {
-    try {
-        const { amount, playerId, ownerId, auctionId } = req.body;
-        const bid = await prisma.bid.create({
-            data: {
-                amount,
-                playerId,
-                ownerId,
-                auctionId,
-            },
-        });
-        res.status(201).json(bid);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
+let io;
+
+export const initializeBidController = (server) => {
+  io = new Server(server, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"]
     }
+  });
+
+  io.on('connection', (socket) => {
+    console.log('A user connected');
+
+    socket.on('joinAuction', (auctionId) => {
+      socket.join(auctionId);
+      console.log(`User joined auction: ${auctionId}`);
+    });
+
+    socket.on('placeBid', (data) => {
+      const { auctionId, playerId, teamId, amount } = data;
+      io.to(auctionId).emit('bidUpdate', { playerId, teamId, amount });
+    });
+
+    socket.on('disconnect', () => {
+      console.log('User disconnected');
+    });
+  });
 };
 
-export const getBidsForAuction = async (req, res) => {
-    try {
-        const { auctionId } = req.params;
-        const bids = await prisma.bid.findMany({
-            where: { auctionId },
-        });
-        res.status(200).json(bids);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
+export const placeBid = (req, res) => {
+  const { auctionId, playerId, teamId, amount } = req.body;
+  io.to(auctionId).emit('bidUpdate', { playerId, teamId, amount });
+  res.status(200).json({ message: 'Bid placed successfully' });
+};
+
+export const getBidsForAuction = (req, res) => {
+  res.status(200).json({ message: 'Bids are managed client-side' });
 };

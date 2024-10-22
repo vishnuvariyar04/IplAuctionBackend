@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Alert, FlatList } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import io from 'socket.io-client';
 
 export default function BiddingPage() {
   const { auctionId, teamId } = useLocalSearchParams();
@@ -10,10 +11,22 @@ export default function BiddingPage() {
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [currentBid, setCurrentBid] = useState(0);
+  const [bidHistory, setBidHistory] = useState([]);
+  const [socket, setSocket] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
     fetchAuctionData();
+    const newSocket = io('https://iplauctionbackend-1.onrender.com'); // Replace with your backend URL
+    setSocket(newSocket);
+
+    newSocket.emit('joinAuction', auctionId);
+
+    newSocket.on('bidUpdate', handleBidUpdate);
+
+    return () => {
+      newSocket.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -83,13 +96,19 @@ export default function BiddingPage() {
     }
   };
 
+  const handleBidUpdate = (bid) => {
+    setCurrentBid(bid.amount);
+    setBidHistory(prevHistory => [...prevHistory, bid]);
+  };
+
   const handleBid = async () => {
     const newBid = currentBid + auctionData.bid_increment;
-    setCurrentBid(newBid);
-
-    // Here you would typically send the bid to your backend
-    // For now, we'll just simulate a successful bid
-    Alert.alert('Bid Placed', `Your bid of $${newBid.toLocaleString()} has been placed!`);
+    socket.emit('placeBid', {
+      auctionId,
+      playerId: currentPlayer.id,
+      teamId,
+      amount: newBid
+    });
   };
 
   const formatTime = (seconds) => {
@@ -124,8 +143,15 @@ export default function BiddingPage() {
       >
         <Text className="text-white font-bold text-center">Place Bid (${(currentBid + auctionData.bid_increment).toLocaleString()})</Text>
       </TouchableOpacity>
+      <FlatList
+        data={bidHistory}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <Text className="text-gray-300">Team {item.teamId}: ${item.amount.toLocaleString()}</Text>
+        )}
+      />
       <TouchableOpacity 
-        className="bg-red-500 p-4 rounded"
+        className="bg-red-500 p-4 rounded mt-4"
         onPress={() => router.back()}
       >
         <Text className="text-white font-bold text-center">Exit Auction</Text>
