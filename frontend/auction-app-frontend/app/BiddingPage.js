@@ -14,15 +14,24 @@ export default function BiddingPage() {
   const [bidHistory, setBidHistory] = useState([]);
   const [socket, setSocket] = useState(null);
   const router = useRouter();
+  const [teams, setTeams] = useState({});
 
   useEffect(() => {
     fetchAuctionData();
-    const newSocket = io('https://iplauctionbackend-1.onrender.com'); // Replace with your backend URL
+    const newSocket = io('https://iplauctionbackend-1.onrender.com');
     setSocket(newSocket);
 
     newSocket.emit('joinAuction', auctionId);
 
-    newSocket.on('bidUpdate', handleBidUpdate);
+    newSocket.on('bidUpdate', async (bid) => {
+      await handleBidUpdate(bid);
+    });
+
+    newSocket.on('playerUpdate', (data) => {
+      setCurrentPlayer(data.player);
+      setCurrentBid(data.currentBid);
+      setTimeLeft(data.timeLeft);
+    });
 
     return () => {
       newSocket.disconnect();
@@ -47,6 +56,13 @@ export default function BiddingPage() {
       if (response.ok) {
         const data = await response.json();
         setAuctionData(data);
+        // Create a map of team IDs to team names
+        const teamMap = {};
+        data.teams.forEach(team => {
+          teamMap[team.id] = team.name;
+        });
+        setTeams(teamMap);
+        console.log('Team Map:', teamMap); // Add this line for debugging
       } else {
         console.error('Failed to fetch auction data. Status:', response.status);
         Alert.alert('Error', 'Failed to fetch auction data');
@@ -96,9 +112,11 @@ export default function BiddingPage() {
     }
   };
 
-  const handleBidUpdate = (bid) => {
+  const handleBidUpdate = async (bid) => {
     setCurrentBid(bid.amount);
-    setBidHistory(prevHistory => [...prevHistory, bid]);
+    const teamName = await fetchTeamInfo(bid.teamId);
+    setBidHistory(prevHistory => [...prevHistory, { ...bid, teamName }]);
+    console.log('Bid received:', bid, 'Team Name:', teamName);
   };
 
   const handleBid = async () => {
@@ -115,6 +133,28 @@ export default function BiddingPage() {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  };
+
+  const fetchTeamInfo = async (teamId) => {
+    try {
+      const authToken = await AsyncStorage.getItem('authToken');
+      const response = await fetch(`https://iplauctionbackend-1.onrender.com/api/teams/${teamId}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.name;
+      } else {
+        console.error('Failed to fetch team info. Status:', response.status);
+        return 'Unknown Team';
+      }
+    } catch (error) {
+      console.error('Error fetching team info:', error);
+      return 'Unknown Team';
+    }
   };
 
   if (!currentPlayer) {
@@ -147,7 +187,7 @@ export default function BiddingPage() {
         data={bidHistory}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
-          <Text className="text-gray-300">Team {item.teamId}: ${item.amount.toLocaleString()}</Text>
+          <Text className="text-gray-300">{item.teamName}: ${item.amount.toLocaleString()}</Text>
         )}
       />
       <TouchableOpacity 
