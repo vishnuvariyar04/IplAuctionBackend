@@ -24,7 +24,6 @@ export const initializeBidController = (server) => {
         await initializeAuction(auctionId);
       }
 
-      // Send current player data to the newly joined user
       socket.emit('playerUpdate', getCurrentPlayerData(auctionId));
     });
 
@@ -80,7 +79,6 @@ const moveToNextPlayer = async (auctionId) => {
   const auction = currentAuctions[auctionId];
   const currentPlayer = auction.players[auction.currentPlayerIndex];
 
-  // Update the current player's team if there was a bid
   if (auction.highestBidder) {
     await updatePlayerTeam(currentPlayer.id, auction.highestBidder);
     io.to(auctionId).emit('playerSold', { 
@@ -95,7 +93,6 @@ const moveToNextPlayer = async (auctionId) => {
   auction.currentPlayerIndex++;
   
   if (auction.currentPlayerIndex >= auction.players.length) {
-    // Auction ended
     io.to(auctionId).emit('auctionEnded');
     delete currentAuctions[auctionId];
   } else {
@@ -112,10 +109,7 @@ const handleBid = async (auctionId, playerId, teamId, amount) => {
   if (amount > auction.currentBid) {
     auction.currentBid = amount;
     auction.highestBidder = teamId;
-    auction.timeLeft = 60; // Reset timer on new bid
-    startAuctionTimer(auctionId);
     io.to(auctionId).emit('bidUpdate', { playerId, teamId, amount });
-    io.to(auctionId).emit('playerUpdate', getCurrentPlayerData(auctionId));
   }
 };
 
@@ -131,19 +125,10 @@ const getCurrentPlayerData = (auctionId) => {
 
 const updatePlayerTeam = async (playerId, teamId) => {
   try {
-    const response = await fetch('https://iplauctionbackend-1.onrender.com/api/addPlayer/add', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ playerId, teamId }),
+    const updatedPlayer = await prisma.player.update({
+      where: { id: playerId },
+      data: { teamId: teamId },
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to update player team');
-    }
-
-    const updatedPlayer = await response.json();
     console.log('Player updated:', updatedPlayer);
   } catch (error) {
     console.error('Error updating player team:', error);
@@ -157,5 +142,5 @@ export const placeBid = (req, res) => {
 };
 
 export const getBidsForAuction = (req, res) => {
-  res.status(200).json({ message: 'Bids are managed client-side' });
+  res.status(200).json({ message: 'Bids are managed in real-time' });
 };
