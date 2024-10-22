@@ -67,7 +67,9 @@ export default function AuctionsJoined() {
     if (!auctionData) return 'Loading...';
     
     const startTime = new Date(auctionData.start_time);
-    const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour after start time
+    const totalDuration = 10000000;
+    // auctionData.players.length * auctionData.bid_duration * 1000; // in milliseconds
+    const endTime = new Date(startTime.getTime() + totalDuration);
     
     if (currentTime < startTime) {
       return 'Not Started';

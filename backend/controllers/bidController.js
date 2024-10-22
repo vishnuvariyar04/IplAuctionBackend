@@ -41,6 +41,14 @@ export const initializeBidController = (server) => {
     socket.on('disconnect', () => {
       console.log('User disconnected');
     });
+
+    socket.on('startAuction', async (data) => {
+      const { auctionId } = data;
+      if (currentAuctions[auctionId] && currentAuctions[auctionId].status === 'waiting') {
+        await startAuction(auctionId);
+        io.to(auctionId).emit('auctionStarted', getCurrentAuctionData(auctionId));
+      }
+    });
   });
 };
 
@@ -88,8 +96,7 @@ const startAuction = async (auctionId) => {
     currentBid: auction.players[0].price,
     timeLeft: auction.bid_duration,
     timer: null,
-    highestBidder: null,
-    endTime: new Date(Date.now() + auction.players.length * auction.bid_duration * 1000)
+    highestBidder: null
   };
 
   startAuctionTimer(auctionId);
@@ -143,7 +150,8 @@ const handleBid = async (auctionId, playerId, teamId, amount) => {
   if (auction && auction.status === 'active' && amount > auction.currentBid) {
     auction.currentBid = amount;
     auction.highestBidder = teamId;
-    auction.timeLeft = 60; // Reset timer on new bid
+    // Remove the line that resets the timer
+    // auction.timeLeft = 60; // Reset timer on new bid
     io.to(auctionId).emit('bidUpdate', { playerId, teamId, amount });
     io.to(auctionId).emit('playerUpdate', getCurrentPlayerData(auctionId));
   }
@@ -188,4 +196,12 @@ const getCurrentAuctionData = (auctionId) => {
     currentPlayer: getCurrentPlayerData(auctionId),
     endTime: auction.endTime
   } : null;
+};
+
+const checkAuctionEnd = (auctionId) => {
+  const auction = currentAuctions[auctionId];
+  if (auction.currentPlayerIndex >= auction.players.length) {
+    io.to(auctionId).emit('auctionEnded');
+    delete currentAuctions[auctionId];
+  }
 };
