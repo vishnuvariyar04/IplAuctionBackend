@@ -11,7 +11,6 @@ import userRoutes from './routes/userRoutes.js';
 import multer from 'multer';
 import path from 'path';
 import { initializeBidController } from './controllers/bidController.js';
-import addPlayerRoutes from './routes/addPlayerRoutes.js';
 import bidRoutes from './routes/bidRoutes.js';
 
 const storage = multer.diskStorage({
@@ -40,7 +39,6 @@ app.use('/api/players', playerRoutes);
 app.use('/api/auctions', auctionRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/bids', bidRoutes);
-app.use('/api/addPlayer', addPlayerRoutes);
 
 // app.use(cors({
 //     origin: 'exp://192.168.43.143:8081', // Replace with your frontend's URL
