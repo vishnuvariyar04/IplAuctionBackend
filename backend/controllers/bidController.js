@@ -24,8 +24,9 @@ export const initializeBidController = (server) => {
         await initializeAuction(auctionId);
       }
 
-      // Send current player data to the newly joined user
-      socket.emit('playerUpdate', getCurrentPlayerData(auctionId));
+      // Send current auction state to all clients in the auction room
+      const auctionState = getCurrentPlayerData(auctionId);
+      io.to(auctionId).emit('auctionStateUpdate', auctionState);
     });
 
     socket.on('placeBid', async (data) => {

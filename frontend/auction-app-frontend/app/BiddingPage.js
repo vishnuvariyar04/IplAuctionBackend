@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, Alert, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, FlatList } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
@@ -14,35 +14,29 @@ export default function BiddingPage() {
   const [bidHistory, setBidHistory] = useState([]);
   const [socket, setSocket] = useState(null);
   const router = useRouter();
-  const [teams, setTeams] = useState({});
 
   useEffect(() => {
-    fetchAuctionData();
     const newSocket = io('https://iplauctionbackend-1.onrender.com');
     setSocket(newSocket);
 
     newSocket.emit('joinAuction', auctionId);
 
-    newSocket.on('bidUpdate', async (bid) => {
-      await handleBidUpdate(bid);
-    });
-
-    newSocket.on('playerUpdate', (data) => {
-      setCurrentPlayer(data.player);
+    newSocket.on('auctionStateUpdate', (data) => {
+      setAuctionData(data);
+      setCurrentPlayer(data.players[data.currentPlayerIndex]);
       setCurrentBid(data.currentBid);
       setTimeLeft(data.timeLeft);
+    });
+
+    newSocket.on('connect_error', (err) => {
+      console.error('Socket connection error:', err);
+      Alert.alert('Error', 'Failed to connect to the auction. Please try again.');
     });
 
     return () => {
       newSocket.disconnect();
     };
-  }, []);
-
-  useEffect(() => {
-    if (auctionData) {
-      startBiddingProcess();
-    }
-  }, [auctionData]);
+  }, [auctionId]);
 
   const fetchAuctionData = async () => {
     try {
@@ -56,13 +50,9 @@ export default function BiddingPage() {
       if (response.ok) {
         const data = await response.json();
         setAuctionData(data);
-        // Create a map of team IDs to team names
-        const teamMap = {};
-        data.teams.forEach(team => {
-          teamMap[team.id] = team.name;
-        });
-        setTeams(teamMap);
-        console.log('Team Map:', teamMap); // Add this line for debugging
+        setCurrentPlayer(data.players[0]);
+        setCurrentBid(data.players[0].price);
+        setTimeLeft(data.bid_duration * 60);
       } else {
         console.error('Failed to fetch auction data. Status:', response.status);
         Alert.alert('Error', 'Failed to fetch auction data');
@@ -71,52 +61,6 @@ export default function BiddingPage() {
       console.error('Error fetching auction data:', error);
       Alert.alert('Error', 'An unexpected error occurred');
     }
-  };
-
-  const startBiddingProcess = () => {
-    if (auctionData.players.length > 0) {
-      setCurrentPlayer(auctionData.players[0]);
-      setCurrentBid(auctionData.players[0].price);
-      setTimeLeft(auctionData.bid_duration * 60); // Convert minutes to seconds
-      startTimer();
-    } else {
-      Alert.alert('Auction Completed', 'All players have been auctioned.');
-      router.back();
-    }
-  };
-
-  const startTimer = () => {
-    const timer = setInterval(() => {
-      setTimeLeft((prevTime) => {
-        if (prevTime <= 1) {
-          clearInterval(timer);
-          moveToNextPlayer();
-          return 0;
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
-  };
-
-  const moveToNextPlayer = () => {
-    const nextIndex = currentPlayerIndex + 1;
-    if (nextIndex < auctionData.players.length) {
-      setCurrentPlayerIndex(nextIndex);
-      setCurrentPlayer(auctionData.players[nextIndex]);
-      setCurrentBid(auctionData.players[nextIndex].price);
-      setTimeLeft(auctionData.bid_duration * 60); // Reset timer for new player
-      startTimer();
-    } else {
-      Alert.alert('Auction Completed', 'All players have been auctioned.');
-      router.back();
-    }
-  };
-
-  const handleBidUpdate = async (bid) => {
-    setCurrentBid(bid.amount);
-    const teamName = await fetchTeamInfo(bid.teamId);
-    setBidHistory(prevHistory => [...prevHistory, { ...bid, teamName }]);
-    console.log('Bid received:', bid, 'Team Name:', teamName);
   };
 
   const handleBid = async () => {
@@ -129,35 +73,7 @@ export default function BiddingPage() {
     });
   };
 
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
-  };
-
-  const fetchTeamInfo = async (teamId) => {
-    try {
-      const authToken = await AsyncStorage.getItem('authToken');
-      const response = await fetch(`https://iplauctionbackend-1.onrender.com/api/teams/${teamId}`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data.name;
-      } else {
-        console.error('Failed to fetch team info. Status:', response.status);
-        return 'Unknown Team';
-      }
-    } catch (error) {
-      console.error('Error fetching team info:', error);
-      return 'Unknown Team';
-    }
-  };
-
-  if (!currentPlayer) {
+  if (!auctionData) {
     return (
       <View className="flex-1 bg-gray-900 justify-center items-center">
         <Text className="text-white text-xl">Loading auction data...</Text>
@@ -199,3 +115,9 @@ export default function BiddingPage() {
     </View>
   );
 }
+
+const formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+};
