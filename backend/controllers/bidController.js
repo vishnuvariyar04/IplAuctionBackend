@@ -21,17 +21,36 @@ export const initializeBidController = (server) => {
       console.log(`User joined auction: ${auctionId}`);
 
       if (!currentAuctions[auctionId]) {
-        await initializeAuction(auctionId);
+        const auction = await prisma.auction.findUnique({
+          where: { id: auctionId },
+          include: { players: true }
+        });
+        currentAuctions[auctionId] = {
+          currentPlayerIndex: 0,
+          players: auction.players,
+          currentBid: auction.players[0].price,
+          timeLeft: auction.bid_duration * 60,
+          timer: null
+        };
+        startAuctionTimer(auctionId);
       }
 
-      // Send current auction state to all clients in the auction room
-      const auctionState = getCurrentPlayerData(auctionId);
-      io.to(auctionId).emit('auctionStateUpdate', auctionState);
+      // Send current player data to the newly joined user
+      socket.emit('playerUpdate', {
+        player: currentAuctions[auctionId].players[currentAuctions[auctionId].currentPlayerIndex],
+        currentBid: currentAuctions[auctionId].currentBid,
+        timeLeft: currentAuctions[auctionId].timeLeft
+      });
     });
 
-    socket.on('placeBid', async (data) => {
+    socket.on('placeBid', (data) => {
       const { auctionId, playerId, teamId, amount } = data;
-      await handleBid(auctionId, playerId, teamId, amount);
+      const auction = currentAuctions[auctionId];
+      if (amount > auction.currentBid) {
+        auction.currentBid = amount;
+        auction.highestBidder = teamId; // Assuming you want to track the highest bidder
+        io.to(auctionId).emit('bidUpdate', { playerId, teamId, amount });
+      }
     });
 
     socket.on('disconnect', () => {
@@ -40,47 +59,25 @@ export const initializeBidController = (server) => {
   });
 };
 
-const initializeAuction = async (auctionId) => {
-  const auction = await prisma.auction.findUnique({
-    where: { id: auctionId },
-    include: { players: true }
-  });
-  
-  if (!auction) {
-    console.error(`Auction with id ${auctionId} not found`);
-    return;
-  }
-
-  currentAuctions[auctionId] = {
-    currentPlayerIndex: 0,
-    players: auction.players,
-    currentBid: auction.players[0].price,
-    timeLeft: auction.bid_duration,
-    timer: null,
-    highestBidder: null
-  };
-
-  startAuctionTimer(auctionId);
-};
-
 const startAuctionTimer = (auctionId) => {
   const auction = currentAuctions[auctionId];
-  clearInterval(auction.timer);
-  
   auction.timer = setInterval(() => {
     auction.timeLeft--;
     if (auction.timeLeft <= 0) {
       clearInterval(auction.timer);
       moveToNextPlayer(auctionId);
     }
-    io.to(auctionId).emit('timerUpdate', { timeLeft: auction.timeLeft });
+    io.to(auctionId).emit('playerUpdate', {
+      player: auction.players[auction.currentPlayerIndex],
+      currentBid: auction.currentBid,
+      timeLeft: auction.timeLeft
+    });
   }, 1000);
 };
 
 const moveToNextPlayer = (auctionId) => {
   const auction = currentAuctions[auctionId];
   auction.currentPlayerIndex++;
-  
   if (auction.currentPlayerIndex >= auction.players.length) {
     // Auction ended
     io.to(auctionId).emit('auctionEnded');
@@ -88,32 +85,8 @@ const moveToNextPlayer = (auctionId) => {
   } else {
     auction.currentBid = auction.players[auction.currentPlayerIndex].price;
     auction.timeLeft = 60; // Reset timer for new player
-    auction.highestBidder = null;
     startAuctionTimer(auctionId);
-    io.to(auctionId).emit('playerUpdate', getCurrentPlayerData(auctionId));
   }
-};
-
-const handleBid = async (auctionId, playerId, teamId, amount) => {
-  const auction = currentAuctions[auctionId];
-  if (amount > auction.currentBid) {
-    auction.currentBid = amount;
-    auction.highestBidder = teamId;
-    auction.timeLeft = 60; // Reset timer on new bid
-    startAuctionTimer(auctionId);
-    io.to(auctionId).emit('bidUpdate', { playerId, teamId, amount });
-    io.to(auctionId).emit('playerUpdate', getCurrentPlayerData(auctionId));
-  }
-};
-
-const getCurrentPlayerData = (auctionId) => {
-  const auction = currentAuctions[auctionId];
-  return {
-    player: auction.players[auction.currentPlayerIndex],
-    currentBid: auction.currentBid,
-    timeLeft: auction.timeLeft,
-    highestBidder: auction.highestBidder
-  };
 };
 
 export const placeBid = (req, res) => {

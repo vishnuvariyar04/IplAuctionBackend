@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
@@ -8,10 +8,8 @@ export default function BiddingPage() {
   const { auctionId, teamId } = useLocalSearchParams();
   const [auctionData, setAuctionData] = useState(null);
   const [currentPlayer, setCurrentPlayer] = useState(null);
-  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(0);
   const [currentBid, setCurrentBid] = useState(0);
-  const [bidHistory, setBidHistory] = useState([]);
+  const [timeLeft, setTimeLeft] = useState(0);
   const [socket, setSocket] = useState(null);
   const router = useRouter();
 
@@ -38,32 +36,11 @@ export default function BiddingPage() {
     };
   }, [auctionId]);
 
-  const fetchAuctionData = async () => {
-    try {
-      const authToken = await AsyncStorage.getItem('authToken');
-      const response = await fetch(`https://iplauctionbackend-1.onrender.com/api/auctions/${auctionId}`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAuctionData(data);
-        setCurrentPlayer(data.players[0]);
-        setCurrentBid(data.players[0].price);
-        setTimeLeft(data.bid_duration * 60);
-      } else {
-        console.error('Failed to fetch auction data. Status:', response.status);
-        Alert.alert('Error', 'Failed to fetch auction data');
-      }
-    } catch (error) {
-      console.error('Error fetching auction data:', error);
-      Alert.alert('Error', 'An unexpected error occurred');
-    }
-  };
-
   const handleBid = async () => {
+    if (!currentPlayer) {
+      Alert.alert('Error', 'No current player to bid on.');
+      return;
+    }
     const newBid = currentBid + auctionData.bid_increment;
     socket.emit('placeBid', {
       auctionId,
@@ -73,7 +50,7 @@ export default function BiddingPage() {
     });
   };
 
-  if (!auctionData) {
+  if (!auctionData || !currentPlayer) {
     return (
       <View className="flex-1 bg-gray-900 justify-center items-center">
         <Text className="text-white text-xl">Loading auction data...</Text>
@@ -84,33 +61,13 @@ export default function BiddingPage() {
   return (
     <View className="flex-1 bg-gray-900 p-4">
       <Text className="text-white text-2xl font-bold mb-4">{currentPlayer.name}</Text>
-      <Text className="text-gray-300 mb-2">Type: {currentPlayer.type}</Text>
-      <Text className="text-gray-300 mb-2">Age: {currentPlayer.age}</Text>
-      <Text className="text-gray-300 mb-2">Nationality: {currentPlayer.nationality}</Text>
-      <Text className="text-gray-300 mb-2">Runs: {currentPlayer.runs}</Text>
-      <Text className="text-gray-300 mb-2">Wickets: {currentPlayer.wickets}</Text>
-      <Text className="text-gray-300 mb-2">Base Price: ${currentPlayer.price.toLocaleString()}</Text>
       <Text className="text-gray-300 mb-2">Current Bid: ${currentBid.toLocaleString()}</Text>
-      <Text className="text-gray-300 mb-2">Bid Increment: ${auctionData.bid_increment.toLocaleString()}</Text>
-      <Text className="text-gray-300 mb-4">Time Left: {formatTime(timeLeft)}</Text>
+      <Text className="text-gray-300 mb-2">Time Left: {formatTime(timeLeft)}</Text>
       <TouchableOpacity 
         className="bg-green-500 p-4 rounded mb-4"
         onPress={handleBid}
       >
-        <Text className="text-white font-bold text-center">Place Bid (${(currentBid + auctionData.bid_increment).toLocaleString()})</Text>
-      </TouchableOpacity>
-      <FlatList
-        data={bidHistory}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
-          <Text className="text-gray-300">{item.teamName}: ${item.amount.toLocaleString()}</Text>
-        )}
-      />
-      <TouchableOpacity 
-        className="bg-red-500 p-4 rounded mt-4"
-        onPress={() => router.back()}
-      >
-        <Text className="text-white font-bold text-center">Exit Auction</Text>
+        <Text className="text-white font-bold text-center">Place Bid</Text>
       </TouchableOpacity>
     </View>
   );
