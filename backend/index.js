@@ -23,7 +23,10 @@ const storage = multer.diskStorage({
   });
 const upload = multer({ storage: storage });
 const app = express();
-const server = http.createServer(app);
+const server = app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
 // setupSocket(server);
 
 const PORT = process.env.PORT || 3000;
@@ -50,7 +53,4 @@ app.get('/', (req, res) => {
     res.send('Hello');
 });
 
-const serverInstance = server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  initializeBidController(serverInstance);
-});
+initializeBidController(server);

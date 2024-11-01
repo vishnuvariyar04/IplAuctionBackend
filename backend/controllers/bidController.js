@@ -45,12 +45,8 @@ export const initializeBidController = (server) => {
 
     socket.on('placeBid', (data) => {
       const { auctionId, playerId, teamId, amount } = data;
-      const auction = currentAuctions[auctionId];
-      if (amount > auction.currentBid) {
-        auction.currentBid = amount;
-        auction.highestBidder = teamId; // Assuming you want to track the highest bidder
-        io.to(auctionId).emit('bidUpdate', { playerId, teamId, amount });
-      }
+      currentAuctions[auctionId].currentBid = amount;
+      io.to(auctionId).emit('bidUpdate', { playerId, teamId, amount });
     });
 
     socket.on('disconnect', () => {
