@@ -54,52 +54,17 @@ const initializeAuction = async (auctionId) => {
     currentPlayerIndex: 0,
     players: auction.players,
     currentBid: auction.players[0].price,
-    timeLeft: auction.bid_duration,
-    timer: null,
     highestBidder: null
   };
 
-  startAuctionTimer(auctionId);
-};
-
-const startAuctionTimer = (auctionId) => {
-  const auction = currentAuctions[auctionId];
-  clearInterval(auction.timer);
-  
-  auction.timer = setInterval(() => {
-    auction.timeLeft--;
-    if (auction.timeLeft <= 0) {
-      clearInterval(auction.timer);
-      moveToNextPlayer(auctionId);
-    }
-    io.to(auctionId).emit('timerUpdate', { timeLeft: auction.timeLeft });
-  }, 1000);
-};
-
-const moveToNextPlayer = (auctionId) => {
-  const auction = currentAuctions[auctionId];
-  auction.currentPlayerIndex++;
-  
-  if (auction.currentPlayerIndex >= auction.players.length) {
-    // Auction ended
-    io.to(auctionId).emit('auctionEnded');
-    delete currentAuctions[auctionId];
-  } else {
-    auction.currentBid = auction.players[auction.currentPlayerIndex].price;
-    auction.timeLeft = 60; // Reset timer for new player
-    auction.highestBidder = null;
-    startAuctionTimer(auctionId);
-    io.to(auctionId).emit('playerUpdate', getCurrentPlayerData(auctionId));
-  }
+  // No timer logic here
 };
 
 const handleBid = async (auctionId, playerId, teamId, amount) => {
   const auction = currentAuctions[auctionId];
   if (amount > auction.currentBid) {
     auction.currentBid = amount;
-    auction.highestBidder = teamId;
-    auction.timeLeft = 60; // Reset timer on new bid
-    startAuctionTimer(auctionId);
+    auction.highestBidder = teamId; 
     io.to(auctionId).emit('bidUpdate', { playerId, teamId, amount });
     io.to(auctionId).emit('playerUpdate', getCurrentPlayerData(auctionId));
   }
@@ -110,7 +75,6 @@ const getCurrentPlayerData = (auctionId) => {
   return {
     player: auction.players[auction.currentPlayerIndex],
     currentBid: auction.currentBid,
-    timeLeft: auction.timeLeft,
     highestBidder: auction.highestBidder
   };
 };

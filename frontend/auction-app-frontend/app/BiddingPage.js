@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, Alert, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, FlatList } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
@@ -30,7 +30,7 @@ export default function BiddingPage() {
     newSocket.on('playerUpdate', (data) => {
       setCurrentPlayer(data.player);
       setCurrentBid(data.currentBid);
-      setTimeLeft(data.timeLeft);
+      setTimeLeft(data.player.bid_duration * 60); // Set timer based on bid duration
     });
 
     return () => {
@@ -77,15 +77,17 @@ export default function BiddingPage() {
     if (auctionData.players.length > 0) {
       setCurrentPlayer(auctionData.players[0]);
       setCurrentBid(auctionData.players[0].price);
-      setTimeLeft(auctionData.bid_duration * 60); // Convert minutes to seconds
-      startTimer();
+      setCurrentPlayerIndex(0);
+      setTimeLeft(auctionData.players[0].bid_duration * 60); // Set timer for the first player
+      startTimer(auctionData.players[0].bid_duration * 60); // Start timer for the first player
     } else {
       Alert.alert('Auction Completed', 'All players have been auctioned.');
       router.back();
     }
   };
 
-  const startTimer = () => {
+  const startTimer = (duration) => {
+    setTimeLeft(duration);
     const timer = setInterval(() => {
       setTimeLeft((prevTime) => {
         if (prevTime <= 1) {
@@ -104,8 +106,7 @@ export default function BiddingPage() {
       setCurrentPlayerIndex(nextIndex);
       setCurrentPlayer(auctionData.players[nextIndex]);
       setCurrentBid(auctionData.players[nextIndex].price);
-      setTimeLeft(auctionData.bid_duration * 60); // Reset timer for new player
-      startTimer();
+      startTimer(auctionData.players[nextIndex].bid_duration * 60); // Reset timer for new player
     } else {
       Alert.alert('Auction Completed', 'All players have been auctioned.');
       router.back();
